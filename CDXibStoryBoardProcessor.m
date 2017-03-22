@@ -32,7 +32,25 @@
             if ([url.absoluteString hasSuffix:@".xib"] || [url.absoluteString hasSuffix:@".storyboard"]) {
                 NSLog(@"Obfuscating IB file at path %@", url);
                 NSData *data = [parser obfuscatedXmlData:[NSData dataWithContentsOfURL:url] symbols:symbols];
-                [data writeToURL:url atomically:YES];
+                
+                
+                NSString *srcClsName = [[url lastPathComponent] stringByDeletingPathExtension];
+                NSString *desClsName = symbols[srcClsName];
+                if (desClsName) {
+                    NSURL *tempUrl = [[url URLByDeletingLastPathComponent] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.xib",desClsName]];
+                    [data writeToURL:tempUrl atomically:YES];
+                    
+                    //备份旧xib
+                    NSURL *cpUrl = [url URLByAppendingPathComponent:@".bak"];
+                    [[NSFileManager defaultManager] copyItemAtURL:url toURL:cpUrl error:&error];
+                    [[NSFileManager defaultManager] removeItemAtURL:url error:&error];
+                    if (error) {
+                        NSLog(@"remove file error :%@",error);
+                    }
+                }
+                else {
+                    [data writeToURL:url atomically:YES];
+                }
             }
         }
     }
